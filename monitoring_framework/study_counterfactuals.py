@@ -15,6 +15,12 @@ from subjects.adf_data.credit import credit_data
 from subjects.adf_data.bank import bank_data
 from subjects.adf_data.compas import compas_data
 data = {"census":census_data, "credit":credit_data, "bank":bank_data, "compas": compas_data}
+
+from testing_dataset.themis_data.census import census_data as themis_census_data
+from testing_dataset.themis_data.credit import credit_data as themis_credit_data
+from testing_dataset.themis_data.bank import bank_data as themis_bank_data
+from testing_dataset.themis_data.compas import compas_data as themis_compas_data
+themis_data = {"census":themis_census_data, "credit":themis_credit_data, "bank":themis_bank_data, "compas":themis_compas_data}
 import sys
 
 sys.path.append("./")
@@ -137,12 +143,13 @@ def create_model(model, dataset, algo):
 
         # We now seek to explain a datapoint and how it is predicted
         st.write("Counter-factuals study")
-        X, Y, input_shape, nb_classes = data[dataset[0]]()
+
+        use_themis = st.radio("Use Themis:", [False, True], horizontal = True)
+
+        X, Y, input_shape, nb_classes = (themis_data[dataset[0]] if use_themis else data[dataset[0]])()
         Y = np.argmax(Y, axis=1)
         X = X.astype(np.int64)
         Y = Y.astype(np.int64)
-        nonlabeled_data = pd.concat([pd.DataFrame(X),pd.DataFrame(Y)], axis=1)
-        nonlabeled_data.columns = columns[dataset[0]]
         labeled_data = labeled_df(pd.concat([pd.DataFrame(X),pd.DataFrame(Y)], axis=1), dataset[0])
         labeled_data.columns = columns[dataset[0]]
 
@@ -358,7 +365,7 @@ def as_pyplot_figure(exp, class_names, label=1, figsize=(4,4), title=""):
     return fig
         
 
-def main():
+def main(themis=False):
     models = ["LR","RF","SV","DT"]
     models = ["Logistic Regression","Random Forest","Support Vector Machine","Decision Tree"]
 
@@ -371,6 +378,7 @@ def main():
     # Basic buttons to choose the correct models
     
     picked_dataset = st.radio("Dataset:", datasets, horizontal = True)
+    
     picked_model = st.radio("Model:", models, horizontal = True)
     picked_algo = st.radio("Algorithm:", algorithms, horizontal = True)
     create_model(models_key[picked_model], picked_dataset, picked_algo)
