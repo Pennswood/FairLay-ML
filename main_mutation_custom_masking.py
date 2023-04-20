@@ -326,6 +326,9 @@ def test_cases(dataset, program_name, max_iter, X_train, X_test,X_test_og, y_tra
 def mask_relationship(X):
     X[:,6][X[:,6] == 2] = 0
 
+def mask_native_country(X):
+    X[:,12] = 0
+
 def mask_age(X):
     X[:,0] = 3
 
@@ -380,8 +383,10 @@ if __name__ == '__main__':
 
     X, Y, input_shape, nb_classes = data[dataset]()
 
-    if dataset == "census":
+    if dataset == "census" and sensitive_name == "gender":
         mask_relationship(X)
+    if dataset == "census" and sensitive_name == "race":
+        mask_native_country(X)
 
 
 

@@ -23,6 +23,8 @@ data = {"census":census_data, "credit":credit_data, "bank":bank_data, "compas": 
 
 def mask_relationship(X):
     X[:,6][X[:,6] == 2] = 0
+def mask_native_country(X):
+    X[:,12] = 0
 
 def mask_age(X):
     X[:,0] = 3
@@ -71,9 +73,11 @@ def num_parfait_counterfactuals(trained_model, dataset):
     predictions_probs = trained_model.predict_proba(X)
     # (predictions_probs)
     prediction_probabilities = pd.DataFrame(np.array(predictions_probs)[:,0], columns=["Probability"])
-    if dataset[0] == "census":
+    if dataset[0] == "census" and dataset[1] == "gender":
         print(dataset[0])
         mask_relationship(X)
+    if dataset[0] == "census" and dataset[1] == "race":
+        mask_native_country(X)
     if dataset[0] == "bank":
         print(dataset[0])
         mask_age(X)
@@ -95,8 +99,10 @@ def num_parfait_counterfactuals(trained_model, dataset):
             counter_factuals_X = X.copy()
             
             counter_factuals_X[:,feature_index] = possible_sensitive_value
-            if dataset[0] == "census":
+            if dataset[0] == "census" and dataset[1] == "gender":
                 mask_relationship(counter_factuals_X)
+            if dataset[0] == "census" and dataset[1] == "race":
+                mask_native_country(counter_factuals_X)
             if dataset[0] == "bank":
                 mask_age(counter_factuals_X)
             counter_factual_predictions = trained_model.predict(counter_factuals_X)
@@ -105,14 +111,18 @@ def num_parfait_counterfactuals(trained_model, dataset):
     else:
         counter_factuals_X = X.copy()
         counter_factuals_X[:,feature_index] = X[:,feature_index].max()
-        if dataset[0] == "census":
+        if dataset[0] == "census" and dataset[1] == "gender":
             mask_relationship(counter_factuals_X)
+        if dataset[0] == "census" and dataset[1] == "race":
+            mask_native_country(counter_factuals_X)
         if dataset[0] == "bank":
             mask_age(counter_factuals_X)
         counter_factual_max_predictions = trained_model.predict(counter_factuals_X)
         counter_factuals_X[:,feature_index] = X[:,feature_index].min()
-        if dataset[0] == "census":
+        if dataset[0] == "census" and dataset[1] == "gender":
             mask_relationship(counter_factuals_X)
+        if dataset[0] == "census" and dataset[1] == "race":
+            mask_native_country(counter_factuals_X)
         if dataset[0] == "bank":
             mask_age(counter_factuals_X)
         counter_factual_min_predictions = trained_model.predict(counter_factuals_X)
@@ -156,7 +166,7 @@ def create_model(model, dataset, algo):
         row["num_parfait_counterfactuals"], row["total_sampled_points"] = num_parfait_counterfactuals(trained_model, dataset)
     
 
-    return df_worst[["AOD","num_parfait_counterfactuals", "total_sampled_points"]], df_pareto_optimal_max_score_row[["AOD","num_parfait_counterfactuals", "total_sampled_points"]], df_pareto_optimal_max_AOD_row[["AOD","num_parfait_counterfactuals", "total_sampled_points"]]
+    return df_worst[["score", "AOD","num_parfait_counterfactuals", "total_sampled_points"]], df_pareto_optimal_max_score_row[["score", "AOD","num_parfait_counterfactuals", "total_sampled_points"]], df_pareto_optimal_max_AOD_row[["score", "AOD","num_parfait_counterfactuals", "total_sampled_points"]]
 
     
 
@@ -182,7 +192,7 @@ def main():
 
     models_key = {"Logistic Regression":"LR", "Random Forest": "RF", "Support Vector Machine": "SV", "Decision Tree": "DT"}
     # Note: Index starts at 1 for the datasets, so subtract 1 from datasets[2] to ensure we are highlighting the correct sensitive feature!
-    datasets = [("census", "gender",9), ("bank","age",1)]
+    datasets = [("census", "gender",9), ("census","race",8), ("bank","age",1)]
 
     algorithms = ["mutation"]
 
@@ -190,7 +200,7 @@ def main():
     
     picked_algo = "mutation"
     count = 0
-    score_dataframe = pd.DataFrame(columns = ["AOD","num_parfait_counterfactuals","total_sampled_points", 'dataset', 'model', 'optimal'])
+    score_dataframe = pd.DataFrame(columns = ["score", "AOD","num_parfait_counterfactuals","total_sampled_points", 'dataset', 'model', 'optimal'])
 
     for d in datasets:
         for m in models:
