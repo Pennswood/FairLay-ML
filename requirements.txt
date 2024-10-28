@@ -8,3 +8,4 @@ matplotlib
 fairlearn
 lime==0.2.0.1
 graphviz==0.20.1
+altair==4.0
